@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>گردونه شانس Effie</title>
+  <link href="https://fonts.googleapis.com/css2?family=Alice&display=swap" rel="stylesheet" />
+  <style>
+    @font-face {
+      font-family: 'Pinar';
+      src: url('https://cdn.fontcdn.ir/Fonts/Pinar/Pinar.woff2') format('woff2');
+    }
+    body {
+      margin: 0;
+      background-color: #061b2c;
+      font-family: 'Pinar', sans-serif;
+      color: #fff;
+      text-align: center;
+      direction: rtl;
+    }
+    h1 {
+      margin-top: 20px;
+      font-family: 'Alice', serif;
+      color: #fff;
+      font-size: 32px;
+    }
+    p {
+      color: #cfc4fe;
+      font-size: 16px;
+      margin-top: -10px;
+    }
+    #wheel-container {
+      position: relative;
+      margin: 30px auto;
+      width: 80vmin;
+      height: 80vmin;
+    }
+    #wheel {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      border: 8px solid white;
+      box-shadow: 0 0 30px #ffffff55;
+      transition: transform 6s cubic-bezier(0.33, 1, 0.68, 1);
+    }
+    #spin {
+      background-color: #cfc4fe;
+      color: #061b2c;
+      border: none;
+      padding: 10px 25px;
+      font-size: 20px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-family: 'Pinar', sans-serif;
+      margin-top: 10px;
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+    }
+    #popup {
+      position: fixed;
+      top: 45%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: #0b2e45;
+      color: #fff;
+      padding: 25px;
+      border-radius: 20px;
+      font-family: 'Pinar', sans-serif;
+      font-size: 18px;
+      display: none;
+      z-index: 1000;
+      box-shadow: 0 0 40px rgba(255, 255, 255, 0.3);
+      animation: popup-flash 1s ease-in-out infinite alternate;
+    }
+    @keyframes popup-flash {
+      from { box-shadow: 0 0 20px #cfc4fe; }
+      to { box-shadow: 0 0 40px #ffffff; }
+    }
+  </style>
+</head>
+<body>
+  <h1>effie</h1>
+  <p>با گردونه اِفی شاپ شانست رو امتحان کن</p>
+
+  <div id="wheel-container">
+    <canvas id="wheel"></canvas>
+  </div>
+
+  <button id="spin">بچرخون</button>
+
+  <div id="popup"></div>
+
+  <script>
+    const canvas = document.getElementById("wheel");
+    const ctx = canvas.getContext("2d");
+    const size = canvas.width = canvas.height = 600;
+    const center = size / 2;
+    const popup = document.getElementById("popup");
+    const spinBtn = document.getElementById("spin");
+
+    const prizes = [
+      '10%تخفیف', 'رژگونه', 'شانس دوباره', 'هدیه همراه خرید', 'سبد فانتزی',
+      '15%تخفیف', 'هیچی نبردی', 'ارسال رایگان', '10%تخفیف', 'رژلب',
+      '20%تخفیف', 'تخفیف 25%', 'سوپرایز', 'هیچی نبردی', 'رژگونه',
+      '15%تخفیف', 'تخفیف همیشگی 10%', 'هیچی نبردی', 'اسکراب بدن', '10%تخفیف',
+      'سبد فانتزی', '20%تخفیف', 'رژلب', 'هدیه همراه خرید', '15%تخفیف', 'شانس دوباره'
+    ];
+
+    const weights = [
+      20, 1, 1, 1, 1,
+      15, 20, 5, 20, 1,
+      10, 5, 1, 20, 1,
+      15, 5, 20, 1, 20,
+      1, 10, 1, 1, 15, 1
+    ];
+
+    const colors = ['#b5e2ff', '#f8bcff', '#a8a7f7', '#bbcdff'];
+
+    const segmentCount = prizes.length;
+    const angle = 2 * Math.PI / segmentCount;
+
+    for (let i = 0; i < segmentCount; i++) {
+      ctx.beginPath();
+      ctx.fillStyle = colors[i % colors.length];
+      ctx.moveTo(center, center);
+      ctx.arc(center, center, center, angle * i, angle * (i + 1));
+      ctx.fill();
+
+      ctx.save();
+      ctx.translate(center, center);
+      ctx.rotate(angle * (i + 0.5));
+      ctx.textAlign = "right";
+      ctx.fillStyle = "#061b2c";
+      ctx.font = "bold 16px Pinar";
+      ctx.fillText(prizes[i], center - 10, 5);
+      ctx.restore();
+    }
+
+    let rotation = 0;
+    const hasSpun = localStorage.getItem("effie_wheel_spun");
+
+    if (hasSpun === "true") {
+      spinBtn.disabled = true;
+      spinBtn.innerText = "قبلاً چرخاندی";
+    }
+
+    spinBtn.addEventListener("click", () => {
+      if (localStorage.getItem("effie_wheel_spun") === "true") {
+        alert("شما قبلاً یکبار گردونه رو چرخوندی.");
+        return;
+      }
+
+      popup.style.display = "none";
+
+      const totalWeight = weights.reduce((a, b) => a + b, 0);
+      let rand = Math.random() * totalWeight;
+      let selectedIndex = 0;
+
+      for (let i = 0; i < weights.length; i++) {
+        rand -= weights[i];
+        if (rand <= 0) {
+          selectedIndex = i;
+          break;
+        }
+      }
+
+      const degreesPerSegment = 360 / segmentCount;
+      const stopAngle = selectedIndex * degreesPerSegment + degreesPerSegment / 2;
+      const currentRotation = rotation % 360;
+      const extraSpins = 5 * 360;
+      const finalRotation = extraSpins + (360 - stopAngle) - currentRotation;
+      rotation += finalRotation;
+      canvas.style.transform = `rotate(${rotation}deg)`;
+
+      spinBtn.disabled = true;
+
+      setTimeout(() => {
+        popup.innerText = `🎉 جایزه‌ات: ${prizes[selectedIndex]} 🎁`;
+        popup.style.display = "block";
+
+        if (prizes[selectedIndex] !== "شانس دوباره") {
+          localStorage.setItem("effie_wheel_spun", "true");
+        } else {
+          localStorage.removeItem("effie_wheel_spun");
+          spinBtn.disabled = false;
+          spinBtn.innerText = "بچرخون (دوباره)";
+        }
+      }, 6000);
+    });
+  </script>
+</body>
+</html>
